@@ -71,18 +71,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         
         switch shortcutIdentifier {
         case .openFavorites:
+            // selected tab is favorites
             tabBarController.selectedIndex = 0
         case .openDiscover:
+            // selected tab is discover
             tabBarController.selectedIndex = 1
         case .NewRestaurant:
+            // selected tab is favorites
             if let navController = tabBarController.viewControllers?[0] {
                 let restaurantTableViewController = navController.childViewControllers[0]
+                // get to new restaurant page by performing segue
                 restaurantTableViewController.performSegue(withIdentifier: "addRestaurant", sender: restaurantTableViewController)
             } else {
                 return false
             }
         }
-        
         return true
     }
     
