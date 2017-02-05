@@ -8,6 +8,7 @@
 
 import UIKit
 import CoreData
+import UserNotifications
 
 class RestaurantTableViewController: UITableViewController, NSFetchedResultsControllerDelegate, UISearchResultsUpdating, UIViewControllerPreviewingDelegate {
 
@@ -63,6 +64,9 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
         if (traitCollection.forceTouchCapability == .available) {
             registerForPreviewing(with: self as UIViewControllerPreviewingDelegate, sourceView: view)
         }
+        
+        // Notification method call
+        prepareNotification()
     }
     
     func previewingContext(_ previewingContext: UIViewControllerPreviewing, commit viewControllerToCommit: UIViewController) {
@@ -214,7 +218,6 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
     }
     
     // Unwind Segues
-    
     @IBAction func unwindToHomeScreen(segue:UIStoryboardSegue) {
         
     }
@@ -273,4 +276,63 @@ class RestaurantTableViewController: UITableViewController, NSFetchedResultsCont
         }
     }
     
+    // Restaurant Recommendation notification
+    func prepareNotification(){
+        
+        // Make sure the restaurant array is not empty
+        if restaurants.count <= 0 {
+            return
+        }
+        
+        // Pick a restaurant randomly
+        let randomNum = Int(arc4random_uniform(UInt32(restaurants.count)))
+        let suggestedRestaurant = restaurants[randomNum]
+        
+        // Create the notification
+        let content = UNMutableNotificationContent()
+        content.title = "Restaurant Recommendation"
+        content.subtitle = "Try new food tonight"
+        content.body = "I recommend you to check out \(suggestedRestaurant.name!). The restaurant is one of our favorites. It is located at \(suggestedRestaurant.location!). Would you like to give it a try?"
+        content.sound = UNNotificationSound.default()
+        content.userInfo = ["phone": suggestedRestaurant.phone!]
+        
+        // adding restaurant image to the notification
+        let tempDirURL = URL(fileURLWithPath: NSTemporaryDirectory(), isDirectory: true)
+        let tempFileURL = tempDirURL.appendingPathComponent("suggested-restaurant.jpg")
+        
+        if let image = UIImage(data: suggestedRestaurant.image! as Data){
+            try? UIImageJPEGRepresentation(image, 1.0)?.write(to: tempFileURL)
+            if let restaurantImage = try? UNNotificationAttachment(identifier: "restaurantImage", url: tempFileURL, options: nil){
+                content.attachments = [restaurantImage]
+            }
+        }
+        
+        // Create actions for notifications
+        let categoryIdentifier = "foodpin.restaurantaction"
+        let makeReservationAction = UNNotificationAction(identifier: "foodpin.makeReservation", title: "Reserve a table", options: [.foreground])
+        let laterAction = UNNotificationAction(identifier: "foodpin.later", title: "Later", options: [])
+        
+        let category = UNNotificationCategory(identifier: categoryIdentifier, actions: [makeReservationAction, laterAction], intentIdentifiers: [], options: [])
+        UNUserNotificationCenter.current().setNotificationCategories([category])
+        
+        content.categoryIdentifier = categoryIdentifier
+        
+        
+        // create trigger and notification request
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 10, repeats: false)
+        let request = UNNotificationRequest(identifier: "foodpin.restaurantSuggestion", content: content, trigger: trigger)
+        
+        // Schedule the notification
+        UNUserNotificationCenter.current().add(request, withCompletionHandler: nil)
+    }
+    
 }
+
+
+
+
+
+
+
+
+

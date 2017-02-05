@@ -8,9 +8,10 @@
 
 import UIKit
 import CoreData
+import UserNotifications
 
 @UIApplicationMain
-class AppDelegate: UIResponder, UIApplicationDelegate {
+class AppDelegate: UIResponder, UIApplicationDelegate, UNUserNotificationCenterDelegate {
 
     var window: UIWindow?
 
@@ -34,6 +35,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // Uncomment the following lines to display an indicator image
 //        UITabBar.appearance().tintColor = UIColor.white
 //        UITabBar.appearance().selectionIndicatorImage = UIImage(named: "tabitem-selected")
+        
+        // Request User authorization to send notifications
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) {
+            (granted, error) in
+            
+            if granted {
+                print("User notifications are allowed")
+            } else {
+                print("User notifications aren't allowed")
+            }
+        }
+        
+        UNUserNotificationCenter.current().delegate = self
+        
         
         return true
     }
@@ -154,6 +169,25 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             }
         }
     }
+    
+    // UNUserNotificationCenterDelegate
+    func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse, withCompletionHandler completionHandler: @escaping () -> Void) {
+        
+        if response.actionIdentifier == "foodpin.makeReservation" {
+            print("Making reservation..")
+            if let phone = response.notification.request.content.userInfo["phone"] {
+                let telURL = "tel://\(phone)"
+                if let url = URL(string: telURL) {
+                    if UIApplication.shared.canOpenURL(url) {
+                        print("calling \(telURL)")
+                        UIApplication.shared.open(url)
+                    }
+                }
+            }
+        }
+        completionHandler()
+    }
+    
 
 }
 
